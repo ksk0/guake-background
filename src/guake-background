@@ -123,7 +123,7 @@ get_vim_background(){
 #
 check_if_gui(){
 
-	# check for presence of "dconf" utility if not
+	# Check for presence of "dconf" utility if not
 	# present exit with error message
 	#
 	hash dconf 2>/dev/null && return
@@ -140,7 +140,7 @@ check_if_gui(){
 
 check_for_guake(){
 
-	# check for presence of "guake". If not
+	# Check for presence of "guake". If not
 	# present exit with error message
 	#
 	hash guake 2>/dev/null && return
@@ -156,7 +156,7 @@ check_for_guake(){
 
 check_for_config(){
 
-	# check if gauke terminal has beeen configured.
+	# Check if gauke terminal has beeen configured.
 	# If not, exit with error message.
 	#
 	[[ -n $(dconf read ${PALETTE_KEY} 2>/dev/null) ]] && return
@@ -171,6 +171,12 @@ check_for_config(){
 }
 
 check_for_vim(){
+
+	# Check if vim or nvim is installed on system.
+	# If not istalled and interactively run, show
+	# error message. If non interactive run (when
+	# "get" command is executing) only return error.
+	#
 	check_for_vim_binary $1  && return 0
 	[[ $INTERACTIVE -eq 0 ]] && return 1
 
@@ -204,7 +210,10 @@ check_for_vim(){
 check_for_vim_binary(){
 	VIM_BINARY=$1
 
-
+	# Check if desired vi/vim/nvim binary is present
+	# on system. If not argument is given, check for
+	# presence of any of above binary.
+	#
 	if [[ -n $VIM_BINARY ]]; then
 		hash ${VIM_BINARY} 2>/dev/null || return 1
 	else
@@ -218,8 +227,16 @@ check_for_vim_binary(){
 		[[ -z $VIM_BINARY ]] && return 1
 	fi >&2
 
+	# Since name of binary can be alias/link to actual
+	# binary, check real binary name using --version
+	# option. If binary gives no output on --version
+	# option, declare it non existing (it is probably
+	# basic version of "vi" not supporting colorschemes).
+	#
 	VIM_VERSION=$($VIM_BINARY --version 2>/dev/null | awk '{print $1; exit}')
 
+	# no version output, thus declare nonexisting
+	#
 	[[ -z $VIM_VERSION ]] && return 1
 
 	return 0
