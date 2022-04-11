@@ -20,7 +20,7 @@ Clone repository to your system, cd to **guake-bacground** and run:
 sudo make install
 ```
 
-This will install **gauke-background** script directory. As part of
+This will install **gauke-background** script. As part of
 installation process, completion files for `bash` and `zsh` will also
 be installed (if given shells are installed on system).  If given
 shell is installed afterwards, repeat installation process to install
