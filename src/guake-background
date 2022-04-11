@@ -1,0 +1,236 @@
+#!/usr/bin/zsh
+
+#################################################
+# init functions
+#
+init_script(){
+	local PROFILE_DIR=/apps/guake/style/font
+	local PROFILE_KEY=palette
+
+	PALETTE_KEY=$PROFILE_DIR/$PROFILE_KEY
+
+	init_colors
+}
+
+init_colors(){
+	r='[31m'
+	g='[32m'
+	y='[33m'
+	b='[34m'
+	m='[35m'
+	c='[36m'
+	w='[37m'
+	n='[0m'
+}
+
+
+#################################################
+# exec functions
+#
+exec_help(){
+
+	cat<<-EOF
+	
+	   ${y}usage:${n} guake-background set [COLOR]
+
+	   ${y}COLOR:${n}
+	      vi     - use background color of current vi colorscheme
+	      vim    - use background color of current vim colorscheme
+	      nvim   - use background color of current nvim colorscheme
+	      COLOR  - use given hex num as background color
+
+	   ${y}note:${n}
+	      If  no  COLOR is given,  script will find background color of
+	      current colorscheme of first editor it encounters (with given
+	      search order: nvim, vim and lastly vi).
+
+	   ${y}synopsys:${n}
+	      "quake-background" is  script used to set guake terminal back-
+	      ground to same background as vim/neovim color scheme.
+
+	      While there are endless color schemes for vim,  guake supports
+	      only hard coded ones, which does not  necesarely  corespond to
+	      scheme selected in vim. This script sets same background color
+	      for guake terminal as for vim/neovim.
+
+	EOF
+}
+
+exec_set(){
+	check_if_gui
+	check_for_guake
+	check_for_config
+
+	INTERACTIVE=1
+	set_guake_bg $@
+}
+
+exec_get(){
+	INTERACTIVE=0
+
+	get_vim_background
+}
+
+
+#################################################
+# worker functions
+#
+set_guake_bg(){
+
+	local guake_bg=$(get_vim_background $2)
+
+	[[ -z $guake_bg ]] && return 1
+
+	# [[ $vim_binary = set ]] && vim_binary=""
+	# [[ -z $vim_binary ]]    && guake_bg="${2#\#}"
+	# [[ -z $guake_bg ]] && guake_bg=$(get_vim_background $vim_binary)
+	# [[ -z $guake_bg ]] && return 1
+
+	local palette=(${(s.:.)${$(dconf read $PALETTE_KEY)//\'/}})
+
+	palette[-1]="#$guake_bg"
+
+	dconf write $PALETTE_KEY "'${(j.:.)palette}'"
+}
+
+get_vim_background(){
+	if ! check_for_vim $1; then
+		[[ -z $VIM_BINARY ]] && echo ${1#\#}
+		return 1
+	fi
+
+	local vim_tmp=$(mktemp)
+	local headless='--headless'
+
+	[[ $VIM_VERSION != NVIM ]] && headless=""
+
+	$VIM_BINARY $headless \
+		-c "redir! > $vim_tmp" \
+		-c 'hi Normal' \
+		-c 'redir END' \
+		-c quitall 2>/dev/null
+
+	vim_normal=($(cat $vim_tmp))
+
+	echo ${${${(M)vim_normal:#guibg*}#guibg=}#\#}
+
+	rm $vim_tmp
+}
+
+
+#################################################
+# check functions
+#
+check_if_gui(){
+
+	# check for presence of "dconf" utility if not
+	# present exit with error message
+	#
+	hash dconf 2>/dev/null && return
+
+	cat <<-EOF
+		${y}
+		   There is no "dconf" tool! Exiting ...
+		${n}
+	EOF
+
+	exit 1
+}
+
+
+check_for_guake(){
+
+	# check for presence of "guake". If not
+	# present exit with error message
+	#
+	hash guake 2>/dev/null && return
+
+	cat <<-EOF
+		${y}
+		   Guake terminal is not installed! Exiting ...
+		${n}
+	EOF
+
+	exit 1
+}
+
+check_for_config(){
+
+	# check if gauke terminal has beeen configured.
+	# If not, exit with error message.
+	#
+	[[ -n $(dconf read ${PALETTE_KEY} 2>/dev/null) ]] && return
+
+	cat <<-EOF
+		${y}
+		   Guake terminal has not been configured yet. Run guake terminal!
+		${n}
+	EOF
+
+	exit 1
+}
+
+check_for_vim(){
+	check_for_vim_binary $1  && return 0
+	[[ $INTERACTIVE -eq 0 ]] && return 1
+
+	if [[ -z $VIM_BINARY ]]; then
+		cat <<-EOF
+			${y}
+			   There is no "vi/vim/nvim" editor on system! Exiting ...
+			${n}
+		EOF
+
+	elif [[ $VIM_BINARY = vi ]]; then
+		cat <<-EOF
+			${y}
+			   There is no "vim" nor "nvim" editor on system! Exiting ...
+			${n}
+		EOF
+
+	elif [[ $VIM_BINARY = vim ]] || [[ $VIM_BINARY = nvim ]]; then
+		cat <<-EOF
+			${y}
+			   There is no "$VIM_BINARY" on system! Exiting ...
+			${n}
+		EOF
+	else
+		VIM_BINARY=""
+	fi >&2
+
+	return 1
+}
+
+check_for_vim_binary(){
+	VIM_BINARY=$1
+
+
+	if [[ -n $VIM_BINARY ]]; then
+		hash ${VIM_BINARY} 2>/dev/null || return 1
+	else
+		for binary in nvim vim vi; do
+			hash $binary 2>/dev/null || continue
+
+			VIM_BINARY=$binary
+			break
+		done
+
+		[[ -z $VIM_BINARY ]] && return 1
+	fi >&2
+
+	VIM_VERSION=$($VIM_BINARY --version 2>/dev/null | awk '{print $1; exit}')
+
+	[[ -z $VIM_VERSION ]] && return 1
+
+	return 0
+}
+
+
+init_script
+
+case $1 in
+	set)         exec_set $@;;
+	get)         exec_get $@;;
+	*)           exec_help
+esac
+

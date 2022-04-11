@@ -1,0 +1,8 @@
+# ignore vim swap files
+#
+*.sw?
+
+# file "main-source-dir" is here to indicate
+# that we develop this script mainly here!
+#
+main-source-dir
