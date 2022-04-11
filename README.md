@@ -1,5 +1,5 @@
 # What is guake-background?
-"guake-background" is script used to set guake terminal background.
+**guake-background** is script used to set guake terminal background.
 It's primary used to set background to background color of current
 vim/nvim colorscheme, but it cat also be used to set to any
 other color.
@@ -10,7 +10,7 @@ scheme selected in vim. This script sets same background color
 for guake terminal as for vim/neovim.
 
 # Prerequisites
-"guake-background" is `zsh` script, thus zsh shell must be installed
+**guake-background** is `zsh` script, thus zsh shell must be installed
 on system. If `zsh` shell is not present, installation script will
 abort with error message.
 
