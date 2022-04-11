@@ -1,6 +1,6 @@
 # What is guake-background?
 **guake-background** is script used to set guake terminal background.
-It's primary used to set background to background color of current
+It's primarily used to set background to background color of current
 vim/nvim colorscheme, but it cat also be used to set to any
 other color.
 
